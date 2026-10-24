@@ -1,0 +1,25 @@
+[tool.black]
+line-length = 79
+target-version = ['py312']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+    \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+  | alembic
+  | venv
+  | venv312
+  | env
+)/
+'''
+
+[tool.isort]
+profile = "black"
