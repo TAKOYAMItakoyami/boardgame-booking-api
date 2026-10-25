@@ -1,7 +1,10 @@
 from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.core.constants import BOARDGAME_NAME_MAX_LENGTH
+from app.core.constants import (
+    BOARDGAME_DESCRIPTION_MAX_LENGTH,
+    BOARDGAME_NAME_MAX_LENGTH
+)
 from app.core.db import Base, CommonMixin
 
 
@@ -11,7 +14,10 @@ class Boardgame(CommonMixin, Base):
         unique=True,
         nullable=False
     )
-    description: Mapped[str] = mapped_column(String, nullable=True)
+    description: Mapped[str | None] = mapped_column(
+        String(BOARDGAME_DESCRIPTION_MAX_LENGTH),
+        nullable=True
+    )
     max_players: Mapped[int] = mapped_column(nullable=False)
     min_players: Mapped[int] = mapped_column(nullable=False)
     min_age: Mapped[int] = mapped_column(nullable=False)
