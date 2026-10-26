@@ -50,7 +50,9 @@ class UserManager(IntegerIDMixin, BaseUserManager[User, int]):
         user: schemas.BaseUserCreate | User,
     ) -> None:
         if len(password) < MIN_LEN_PASSWORD:
-            error = "Пароль должен содержать не менее 3 символов"
+            error = (
+                f"Пароль должен содержать не менее {MIN_LEN_PASSWORD} символов"
+            )
             raise InvalidPasswordException(reason=error)
         if user.email in password:
             error = "Пароль не может содержать ваш email"
@@ -73,3 +75,4 @@ fastapi_users = FastAPIUsers[User, int](
 
 current_user = fastapi_users.current_user(active=True)
 current_superuser = fastapi_users.current_user(active=True, superuser=True)
+optional_current_user = fastapi_users.current_user(optional=True)

@@ -1,9 +1,14 @@
 from datetime import datetime
+from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, Integer, ForeignKey
+from sqlalchemy import DateTime, ForeignKey, Integer
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.db import Base, CommonMixin
+
+if TYPE_CHECKING:
+    from app.models.boardgame import Boardgame
+    from app.models.user import User
 
 
 class Booking(CommonMixin, Base):
@@ -14,11 +19,10 @@ class Booking(CommonMixin, Base):
 
     boardgame_id: Mapped[int] = mapped_column(
         Integer,
-        ForeignKey('boardgame.id', name='fk_booking_boardgame_id_boardgame')
+        ForeignKey("boardgame.id", name="fk_booking_boardgame_id_boardgame"),
     )
     user_id: Mapped[int] = mapped_column(
-        Integer,
-        ForeignKey('user.id', name='fk_booking_user_id_user')
+        Integer, ForeignKey("user.id", name="fk_booking_user_id_user")
     )
 
     boardgame: Mapped["Boardgame"] = relationship(
@@ -30,7 +34,7 @@ class Booking(CommonMixin, Base):
 
     def __repr__(self):
         return (
-            f'Забронировано с {self.from_booking} '
-            f'по {self.to_booking} '
-            f'на {self.players_count} человек'
+            f"Забронировано с {self.from_booking} "
+            f"по {self.to_booking} "
+            f"на {self.players_count} человек"
         )

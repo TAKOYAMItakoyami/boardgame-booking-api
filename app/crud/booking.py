@@ -23,29 +23,27 @@ class CRUDBooking(CRUDBase):
             self.model.boardgame_id == boardgame_id,
             and_(
                 from_booking < self.model.to_booking,
-                to_booking > self.model.from_booking
-            )
+                to_booking > self.model.from_booking,
+            ),
         )
         if booking_id is not None:
-            statement = statement.where(
-                self.model.id != booking_id
-            )
+            statement = statement.where(self.model.id != booking_id)
         bookings = await session.execute(statement)
         return bookings.scalars().all()
 
     async def get_future_bookings_for_boardgame(
-            self, boardgame_id: int, session: AsyncSession
+        self, boardgame_id: int, session: AsyncSession
     ) -> Sequence[Booking]:
         bookings = await session.execute(
             select(self.model).where(
                 self.model.boardgame_id == boardgame_id,
-                self.model.to_booking > datetime.now()
+                self.model.to_booking > datetime.now(),
             )
         )
         return bookings.scalars().all()
 
     async def get_by_user(
-            self, user: User, session: AsyncSession
+        self, user: User, session: AsyncSession
     ) -> Sequence[Booking]:
         bookings = await session.execute(
             select(self.model).where(self.model.user_id == user.id)

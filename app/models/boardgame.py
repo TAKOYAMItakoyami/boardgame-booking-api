@@ -1,22 +1,24 @@
+from typing import TYPE_CHECKING
+
 from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.constants import (
     BOARDGAME_DESCRIPTION_MAX_LENGTH,
-    BOARDGAME_NAME_MAX_LENGTH
+    BOARDGAME_NAME_MAX_LENGTH,
 )
 from app.core.db import Base, CommonMixin
+
+if TYPE_CHECKING:
+    from app.models.boardgame import Booking
 
 
 class Boardgame(CommonMixin, Base):
     name: Mapped[str] = mapped_column(
-        String(BOARDGAME_NAME_MAX_LENGTH),
-        unique=True,
-        nullable=False
+        String(BOARDGAME_NAME_MAX_LENGTH), unique=True, nullable=False
     )
     description: Mapped[str | None] = mapped_column(
-        String(BOARDGAME_DESCRIPTION_MAX_LENGTH),
-        nullable=True
+        String(BOARDGAME_DESCRIPTION_MAX_LENGTH), nullable=True
     )
     max_players: Mapped[int] = mapped_column(nullable=False)
     min_players: Mapped[int] = mapped_column(nullable=False)
@@ -29,4 +31,4 @@ class Boardgame(CommonMixin, Base):
     )
 
     def __repr__(self):
-        return f'<Настольная игра {self.name}>'
+        return f"<Настольная игра {self.name}>"

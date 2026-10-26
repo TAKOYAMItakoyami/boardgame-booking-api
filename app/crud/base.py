@@ -15,9 +15,7 @@ class CRUDBase:
         session: AsyncSession,
     ):
         db_obj = await session.execute(
-            select(self.model).where(
-                self.model.id == obj_id
-            )
+            select(self.model).where(self.model.id == obj_id)
         )
         return db_obj.scalars().first()
 
@@ -28,14 +26,11 @@ class CRUDBase:
         return db_objs.scalars().all()
 
     async def create(
-        self,
-        obj_in,
-        session: AsyncSession,
-        user: User | None = None
+        self, obj_in, session: AsyncSession, user: User | None = None
     ):
         obj_in_data = obj_in.model_dump()
         if user is not None:
-            obj_in_data['user_id'] = user.id
+            obj_in_data["user_id"] = user.id
         db_obj = self.model(**obj_in_data)
         session.add(db_obj)
         await session.commit()
