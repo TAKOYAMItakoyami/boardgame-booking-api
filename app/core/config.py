@@ -5,7 +5,13 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     app_title: str = "Сервис Boardgame Booking API"
     description: str = "Сервис бронирования настольных игр"
+
     database_url: str | None = "sqlite+aiosqlite:///./bgb.db"
+
+    postgres_user: str | None = None
+    postgres_password: str | None = None
+    postgres_db: str | None = None
+
     secret: str = "SECRET"
     first_superuser_email: EmailStr | None = None
     first_superuser_password: str | None = None

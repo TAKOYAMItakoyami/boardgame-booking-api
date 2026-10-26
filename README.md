@@ -4,6 +4,10 @@
 
 REST API для бронирования настольных игр антикафе **Host&Хвост**.
 
+Приложение работает с SQLite при локальной разработке и с PostgreSQL в Docker,
+переключение — одной переменной окружения. Запуск приложения — через `uvicorn`
+напрямую или через `docker compose`.
+
 ## Описание
 
 **Boardgame Booking API** — сервис, который позволяет:
@@ -79,10 +83,25 @@ REST API для бронирования настольных игр антик�
 
 Требования к паролю: не короче 8 символов и не содержит email пользователя.
 
-Интерактивная документация:
+Интерактивная документация доступна после запуска (порт зависит от способа запуска):
 
-- Swagger UI: `http://127.0.0.1:8000/docs`
-- ReDoc: `http://127.0.0.1:8000/redoc`
+| Режим | Swagger UI | ReDoc |
+| ----- | ---------- | ----- |
+| Локальный запуск (`uvicorn`) | `http://127.0.0.1:8000/docs` | `http://127.0.0.1:8000/redoc` |
+| Запуск в Docker (`docker compose`) | `http://127.0.0.1:8080/docs` | `http://127.0.0.1:8080/redoc` |
+
+## База данных
+
+Проект поддерживает две СУБД — выбор делается одной переменной `DATABASE_URL`
+в файле `.env`, код приложения от этого не зависит:
+
+| Режим | СУБД | `DATABASE_URL` |
+| ----- | ---- | -------------- |
+| Локальная разработка | SQLite | `sqlite+aiosqlite:///./bgbooking.db` |
+| Docker / прод | PostgreSQL 16 | `postgresql+asyncpg://<user>:<password>@db:5432/<db>` |
+
+Обе схемы подключаются через async-движок SQLAlchemy 2.0 (`aiosqlite` и
+`asyncpg`), поэтому `alembic` и все CRUD-запросы работают одинаково с любой БД.
 
 ## Установка
 
@@ -90,15 +109,59 @@ REST API для бронирования настольных игр антик�
 
 - Python 3.12
 - pip
+- Docker и Docker Compose (только для варианта с PostgreSQL)
 
-### Шаги
-
-1. Клонируйте репозиторий и перейдите в каталог проекта:
+### 1. Клонирование и переменные окружения
 
 ```bash
 git clone git@github.com:TAKOYAMItakoyami/boardgame-booking-api.git
 cd boardgame-booking-api
 ```
+
+Создайте файл `.env` из готового шаблона:
+
+```bash
+cp .env.example .env
+```
+
+В `.env.example` оба варианта `DATABASE_URL` уже описаны — для SQLite и для
+PostgreSQL. Активна та строка, которая не закомментирована:
+
+```env
+# Вариант 1: Docker + PostgreSQL (хост db — имя сервиса из docker-compose.yml)
+DATABASE_URL=postgresql+asyncpg://user:password@db:5432/booking
+
+# Вариант 2: локальная разработка на SQLite
+# DATABASE_URL=sqlite+aiosqlite:///./bgbooking.db
+
+# Реквизиты контейнера PostgreSQL (нужны только для Docker)
+POSTGRES_USER=user
+POSTGRES_PASSWORD=password
+POSTGRES_DB=booking
+```
+
+| Переменная                 | Назначение                                     |
+| -------------------------- | ---------------------------------------------- |
+| `APP_TITLE`                | Название сервиса в OpenAPI-документации        |
+| `DESCRIPTION`              | Описание сервиса в OpenAPI-документации        |
+| `SECRET`                   | Секретный ключ для подписи JWT-токенов         |
+| `DATABASE_URL`             | Строка подключения async-движка SQLAlchemy     |
+| `FIRST_SUPERUSER_EMAIL`    | Email первого администратора                   |
+| `FIRST_SUPERUSER_PASSWORD` | Пароль первого администратора                  |
+| `POSTGRES_USER`            | Пользователь контейнера PostgreSQL              |
+| `POSTGRES_PASSWORD`        | Пароль контейнера PostgreSQL                    |
+| `POSTGRES_DB`              | Имя базы контейнера PostgreSQL                  |
+
+Значения `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` должны совпадать
+с сегментом `<user>:<password>@db:5432/<db>` в `DATABASE_URL`.
+
+Файл `.env` в репозиторий не попадает (добавлен в `.gitignore`), поэтому
+`cp .env.example .env` — обязательный шаг после клонирования.
+
+### 2a. Локальный запуск (SQLite)
+
+1. В `.env` закомментируйте строку `DATABASE_URL` с `postgresql+asyncpg` и
+   раскомментируйте строку с `sqlite+aiosqlite`.
 
 2. Создайте и активируйте виртуальное окружение:
 
@@ -112,47 +175,77 @@ venv\Scripts\activate
 source venv/bin/activate
 ```
 
-3. Установите зависимости:
+3. Установите зависимости (прикладные + инструменты проверки кода и SQLite):
 
 ```bash
-pip install -r requirements.txt
+pip install -r requirements-dev.txt
 ```
 
-4. Настройте переменные окружения. Создайте файл `.env` в корне проекта:
-
-```env
-APP_TITLE=Сервис бронирования настольных игр
-DESCRIPTION=Сервис бронирования настольных игр антикафе Host&Хвост
-DATABASE_URL=sqlite+aiosqlite:///./bgbooking.db
-SECRET=your-secret-key
-FIRST_SUPERUSER_EMAIL=admin@example.ru
-FIRST_SUPERUSER_PASSWORD=your-password
-```
-
-| Переменная                 | Назначение                                   |
-| -------------------------- | -------------------------------------------- |
-| `APP_TITLE`                | Название сервиса в OpenAPI-документации      |
-| `DESCRIPTION`              | Описание сервиса в OpenAPI-документации      |
-| `DATABASE_URL`             | Строка подключения async-движка SQLAlchemy   |
-| `SECRET`                   | Секретный ключ для подписи JWT-токенов       |
-| `FIRST_SUPERUSER_EMAIL`    | Email первого администратора                 |
-| `FIRST_SUPERUSER_PASSWORD` | Пароль первого администратора                |
-
-Файл `.env` отсутствует в репозитории и добавлен в `.gitignore`.
-
-5. Примените миграции базы данных:
+4. Примените миграции:
 
 ```bash
 alembic upgrade head
 ```
 
-6. Запустите сервер разработки:
+5. Запустите сервер разработки:
 
 ```bash
 uvicorn app.main:app --reload
 ```
 
-Сервер будет доступен по адресу: `http://127.0.0.1:8000`
+Сервер доступен по адресу `http://127.0.0.1:8000`, база — в файле
+`bgbooking.db` в корне проекта.
+
+### 2b. Запуск в Docker (PostgreSQL)
+
+1. В `.env` оставьте активной строку `DATABASE_URL` с `postgresql+asyncpg`
+   (хост — `db`, имя сервиса из `docker-compose.yml`) и заполните `POSTGRES_*`.
+
+2. Соберите образ и поднимите контейнеры:
+
+```bash
+docker compose up --build -d
+```
+
+3. Проверьте, что сервисы поднялись:
+
+```bash
+docker compose ps
+```
+
+Приложение будет доступно по адресу `http://127.0.0.1:8080` (проброс
+`8080:8000`), Swagger UI — `http://127.0.0.1:8080/docs`.
+
+Остальные команды:
+
+```bash
+# Логи приложения
+docker compose logs -f backend
+
+# Остановить контейнеры (данные PostgreSQL останутся в volume pg_data)
+docker compose down
+
+# Остановить и удалить volume с данными
+docker compose down -v
+```
+
+### Как устроен запуск в Docker
+
+`docker-compose.yml` описывает два сервиса:
+
+| Сервис    | Образ                | Что делает                                                                 |
+| --------- | -------------------- | -------------------------------------------------------------------------- |
+| `db`      | `postgres:16`        | PostgreSQL; данные в именованном volume `pg_data`; healthcheck `pg_isready` |
+| `backend` | сборка из `Dockerfile` | FastAPI + uvicorn на порту 8000 внутри контейнера                          |
+
+`backend` стартует только после того, как `db` станет healthy, и перед запуском
+сервера сам применяет миграции:
+
+```yaml
+command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"
+```
+
+Поэтому отдельный шаг `alembic upgrade head` в Docker не нужен.
 
 При старте приложения (в `lifespan`) автоматически создаётся первый суперюзер из
 `FIRST_SUPERUSER_EMAIL` / `FIRST_SUPERUSER_PASSWORD`, если он ещё не существует.
@@ -160,6 +253,10 @@ uvicorn app.main:app --reload
 нельзя создать через API.
 
 ## Использование
+
+> **Важно:** примеры ниже используют адрес `http://127.0.0.1:8000`. Если вы
+> запустили приложение в Docker, замените порт на `8080`:
+> `http://127.0.0.1:8080`.
 
 ### Примеры запросов
 
@@ -333,10 +430,11 @@ curl http://127.0.0.1:8000/boardgames/1/bookings
 
 ## Проверка кода
 
-Проект настроен на flake8 (конфигурация — в `setup.cfg` и `.flake8`, максимальная
-длина строки 79 символов). Запуск из корня репозитория:
+Проект настроен на flake8 (максимальная длина строки — 79 символов). Зависимости
+для проверки кода и тестов находятся в `requirements-dev.txt`:
 
 ```bash
+pip install -r requirements-dev.txt
 flake8
 ```
 
@@ -376,11 +474,16 @@ boardgame-booking-api/
 │       └── user.py
 ├── alembic/                    # Миграции Alembic
 │   └── versions/
+├── Dockerfile                  # Сборка образа backend (python:3.12-slim + uvicorn)
+├── docker-compose.yml          # Сервисы db (PostgreSQL 16) и backend
+├── .dockerignore               # Исключения для сборки образа (.env, venv, tests)
+├── .env.example                # Шаблон переменных окружения (SQLite / PostgreSQL)
 ├── alembic.ini
-├── .flake8
 ├── pyproject.toml
-├── requirements.txt
-├── setup.cfg
+├── requirements.txt            # Прикладные зависимости
+├── requirements-dev.txt        # Зависимости для разработки и линтера
+├── setup.cfg                   # Конфигурация flake8
+├── .flake8
 └── README.md
 ```
 
@@ -394,9 +497,12 @@ boardgame-booking-api/
 | [Alembic](https://alembic.sqlalchemy.org/) | Миграции базы данных |
 | [Pydantic v2](https://docs.pydantic.dev/) | Валидация и сериализация данных |
 | [pydantic-settings](https://docs.pydantic.dev/latest/concepts/pydantic_settings/) | Настройки из переменных окружения |
-| [aiosqlite](https://github.com/omnilib/aiosqlite) | Асинхронный драйвер SQLite |
+| [asyncpg](https://github.com/MagicStack/asyncpg) | Async-драйвер PostgreSQL |
+| [aiosqlite](https://github.com/omnilib/aiosqlite) | Async-драйвер SQLite (локальная разработка) |
 | [fastapi-users](https://github.com/fastapi-users/fastapi-users) | Аутентификация и JWT-токены |
 | [fastapi-users-db-sqlalchemy](https://github.com/fastapi-users/fastapi-users-db-sqlalchemy) | Хранилище пользователей для fastapi-users |
+| [Docker](https://www.docker.com/) | Контейнеризация |
+| [Docker Compose](https://docs.docker.com/compose/) | Оркестрация контейнеров |
 | [Uvicorn](https://www.uvicorn.org/) | ASGI-сервер |
 | [flake8](https://flake8.pycqa.org/) | Проверка стиля кода |
 
