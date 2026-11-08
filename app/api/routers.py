@@ -19,6 +19,6 @@ main_router.include_router(
     tags=["bookings"],
 )
 main_router.include_router(
-    yandex_router, prefix="/yandex", tags=["Yandex Disk"]
+    yandex_router, prefix="/yandex", tags=["yandex disk"]
 )
 main_router.include_router(user_router)
