@@ -7,13 +7,13 @@ from pydantic import (
 )
 
 from app.core.constants import (
-    AGE_MIN,
+    BOARDGAME_AGE_MIN,
     BOARDGAME_DESCRIPTION_MAX_LENGTH,
     BOARDGAME_NAME_MAX_LENGTH,
     BOARDGAME_NAME_MIN_LENGTH,
-    PLAYERS_LIMIT_MAX,
-    PLAYERS_MIN,
-    PLAYTIME_MINUTES_MIN,
+    BOARDGAME_PLAYERS_LIMIT_MAX,
+    BOARDGAME_PLAYERS_MIN,
+    BOARDGAME_PLAYTIME_MINUTES_MIN,
 )
 
 
@@ -26,10 +26,14 @@ class BoardgameBase(BaseModel):
     description: str | None = Field(
         None, max_length=BOARDGAME_DESCRIPTION_MAX_LENGTH
     )
-    max_players: int | None = Field(None, ge=PLAYERS_MIN, le=PLAYERS_LIMIT_MAX)
-    min_players: int | None = Field(None, ge=PLAYERS_MIN)
-    min_age: int | None = Field(None, ge=AGE_MIN)
-    playtime_minutes: int | None = Field(None, ge=PLAYTIME_MINUTES_MIN)
+    max_players: int | None = Field(
+        None, ge=BOARDGAME_PLAYERS_MIN, le=BOARDGAME_PLAYERS_LIMIT_MAX
+    )
+    min_players: int | None = Field(None, ge=BOARDGAME_PLAYERS_MIN)
+    min_age: int | None = Field(None, ge=BOARDGAME_AGE_MIN)
+    playtime_minutes: int | None = Field(
+        None, ge=BOARDGAME_PLAYTIME_MINUTES_MIN
+    )
     is_available: bool | None = None
 
     @field_validator("name", mode="before")
@@ -54,10 +58,12 @@ class BoardgameCreate(BoardgameBase):
         min_length=BOARDGAME_NAME_MIN_LENGTH,
         max_length=BOARDGAME_NAME_MAX_LENGTH,
     )
-    max_players: int = Field(..., ge=PLAYERS_MIN, le=PLAYERS_LIMIT_MAX)
-    min_players: int = Field(..., ge=PLAYERS_MIN)
-    min_age: int = Field(..., ge=AGE_MIN)
-    playtime_minutes: int = Field(..., ge=PLAYTIME_MINUTES_MIN)
+    max_players: int = Field(
+        ..., ge=BOARDGAME_PLAYERS_MIN, le=BOARDGAME_PLAYERS_LIMIT_MAX
+    )
+    min_players: int = Field(..., ge=BOARDGAME_PLAYERS_MIN)
+    min_age: int = Field(..., ge=BOARDGAME_AGE_MIN)
+    playtime_minutes: int = Field(..., ge=BOARDGAME_PLAYTIME_MINUTES_MIN)
     is_available: bool = Field(default=True)
 
     @model_validator(mode="after")

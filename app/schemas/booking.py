@@ -11,21 +11,25 @@ from pydantic import (
 from typing_extensions import Self
 
 from app.core.constants import (
-    AGE_MIN,
-    FROM_TIME,
-    ID_MIN,
-    PLAYERS_LIMIT_MAX,
-    PLAYERS_MIN,
-    TO_TIME,
+    BOARDGAME_AGE_MIN,
+    BOARDGAME_ID_MIN,
+    BOARDGAME_PLAYERS_LIMIT_MAX,
+    BOARDGAME_PLAYERS_MIN,
+    BOOKING_EXAMPLE_FROM_TIME,
+    BOOKING_EXAMPLE_TO_TIME,
 )
 
 
 class BookingBase(BaseModel):
-    from_booking: NaiveDatetime | None = Field(None, examples=[FROM_TIME])
-    to_booking: NaiveDatetime | None = Field(None, examples=[TO_TIME])
-    youngest_player_age: int | None = Field(None, ge=AGE_MIN)
+    from_booking: NaiveDatetime | None = Field(
+        None, examples=[BOOKING_EXAMPLE_FROM_TIME]
+    )
+    to_booking: NaiveDatetime | None = Field(
+        None, examples=[BOOKING_EXAMPLE_TO_TIME]
+    )
+    youngest_player_age: int | None = Field(None, ge=BOARDGAME_AGE_MIN)
     players_count: int | None = Field(
-        None, ge=PLAYERS_MIN, le=PLAYERS_LIMIT_MAX
+        None, ge=BOARDGAME_PLAYERS_MIN, le=BOARDGAME_PLAYERS_LIMIT_MAX
     )
 
     model_config = ConfigDict(extra="forbid")
@@ -74,12 +78,16 @@ class BookingUpdate(BookingBase):
 
 
 class BookingCreate(BookingUpdate):
-    from_booking: NaiveDatetime = Field(..., examples=[FROM_TIME])
-    to_booking: NaiveDatetime = Field(..., examples=[TO_TIME])
-    youngest_player_age: int = Field(..., ge=AGE_MIN)
-    players_count: int = Field(..., ge=PLAYERS_MIN, le=PLAYERS_LIMIT_MAX)
+    from_booking: NaiveDatetime = Field(
+        ..., examples=[BOOKING_EXAMPLE_FROM_TIME]
+    )
+    to_booking: NaiveDatetime = Field(..., examples=[BOOKING_EXAMPLE_TO_TIME])
+    youngest_player_age: int = Field(..., ge=BOARDGAME_AGE_MIN)
+    players_count: int = Field(
+        ..., ge=BOARDGAME_PLAYERS_MIN, le=BOARDGAME_PLAYERS_LIMIT_MAX
+    )
 
-    boardgame_id: int = Field(..., ge=ID_MIN)
+    boardgame_id: int = Field(..., ge=BOARDGAME_ID_MIN)
 
 
 class BookingDB(BaseModel):
